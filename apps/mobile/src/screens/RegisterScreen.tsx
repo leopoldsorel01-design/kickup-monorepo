@@ -1,135 +1,226 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { View, Text, StyleSheet, Alert, Image, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import LinearGradient from 'react-native-linear-gradient';
 import { RootStackParamList } from '../types';
 import { AuthService } from '../services/auth';
+import { AuthInput, AuthButton, SocialButton } from '../components/AuthComponents';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
+type RegisterScreenProps = {
+    navigation: NativeStackNavigationProp<RootStackParamList, 'Register'>;
+};
 
-export function RegisterScreen({ navigation }: Props) {
+export const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
+    const [fullName, setFullName] = useState('');
+    const [age, setAge] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [dob, setDob] = useState(''); // Format: YYYY-MM-DD
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
     const handleRegister = async () => {
-        if (!email || !password || !dob) {
+        if (!email || !password || !confirmPassword || !fullName || !age) {
             Alert.alert('Error', 'Please fill in all fields');
             return;
         }
 
-        // Simple Age Check (Mock)
-        const birthYear = parseInt(dob.split('-')[0]);
-        const currentYear = new Date().getFullYear();
-        const age = currentYear - birthYear;
-
-        if (age < 13) {
-            Alert.alert('Parental Consent Required', 'Since you are under 13, we need your parent to approve this account.');
+        if (password !== confirmPassword) {
+            Alert.alert('Error', 'Passwords do not match');
             return;
         }
 
         setLoading(true);
-        const { user, error } = await AuthService.register(email, password);
-        setLoading(false);
+        try {
+            await AuthService.register(email, password);
+        } catch (error: any) {
+            Alert.alert('Registration Failed', error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        if (error) {
-            Alert.alert('Registration Failed', error);
-        } else {
-            // Navigation will be handled by App.tsx auth listener, or we can force it here
-            navigation.navigate('Camera');
+    const handleGoogleLogin = async () => {
+        setLoading(true);
+        try {
+            await AuthService.signInWithGoogle();
+        } catch (error: any) {
+            if (error.code !== '12501') {
+                Alert.alert('Google Login Failed', error.message);
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAppleLogin = async () => {
+        setLoading(true);
+        try {
+            await AuthService.signInWithApple();
+        } catch (error: any) {
+            if (error.code !== '1001') {
+                Alert.alert('Apple Login Failed', error.message);
+            }
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Join the KickUp squad</Text>
+        <LinearGradient
+            colors={['#0a192f', '#000000']} // Midnight Blue to Black
+            style={styles.background}
+        >
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={styles.container}
+            >
+                <ScrollView contentContainerStyle={styles.scrollContent}>
+                    <View style={styles.glassContainer}>
+                        <View style={styles.logoContainer}>
+                            <Image
+                                source={require('../assets/images/logo_gold_soccer.png')}
+                                style={styles.logo}
+                                resizeMode="contain"
+                            />
+                            <Text style={styles.title}>Create Your Account</Text>
+                        </View>
 
-            <TextInput
-                style={styles.input}
-                placeholder="Email"
-                placeholderTextColor="#666"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Password"
-                placeholderTextColor="#666"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Date of Birth (YYYY-MM-DD)"
-                placeholderTextColor="#666"
-                value={dob}
-                onChangeText={setDob}
-                keyboardType="numeric"
-            />
+                        <AuthInput
+                            placeholder="Full Name"
+                            value={fullName}
+                            onChangeText={setFullName}
+                            autoCapitalize="words"
+                        />
+                        <AuthInput
+                            placeholder="Age"
+                            value={age}
+                            onChangeText={setAge}
+                            keyboardType="numeric"
+                        />
+                        <AuthInput
+                            placeholder="Email Address"
+                            value={email}
+                            onChangeText={setEmail}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                        />
+                        <AuthInput
+                            placeholder="Password"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry
+                        />
+                        <AuthInput
+                            placeholder="Confirm Password"
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
+                            secureTextEntry
+                        />
 
-            <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
-                {loading ? (
-                    <ActivityIndicator color="#FFF" />
-                ) : (
-                    <Text style={styles.buttonText}>Sign Up</Text>
-                )}
-            </TouchableOpacity>
+                        <AuthButton
+                            title={loading ? "Creating Account..." : "Register"}
+                            onPress={handleRegister}
+                            disabled={loading}
+                            style={styles.registerButton}
+                        />
 
-            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                <Text style={styles.linkText}>Already have an account? Login</Text>
-            </TouchableOpacity>
-        </View>
+                        <View style={styles.dividerContainer}>
+                            {/* Implicit space */}
+                        </View>
+
+                        <SocialButton
+                            provider="google"
+                            title="Connect with Google"
+                            onPress={handleGoogleLogin}
+                            disabled={loading}
+                        />
+
+                        <SocialButton
+                            provider="apple"
+                            title="Connect with Apple"
+                            onPress={handleAppleLogin}
+                            disabled={loading}
+                        />
+
+                        <View style={styles.footer}>
+                            <Text style={styles.footerText}>Already have an account? </Text>
+                            <Text
+                                style={styles.linkText}
+                                onPress={() => navigation.navigate('Login')}
+                            >
+                                Sign In
+                            </Text>
+                        </View>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </LinearGradient>
     );
-}
+};
 
 const styles = StyleSheet.create({
+    background: {
+        flex: 1,
+        width: '100%',
+        height: '100%',
+    },
     container: {
         flex: 1,
-        backgroundColor: '#000',
+    },
+    scrollContent: {
+        flexGrow: 1,
         justifyContent: 'center',
         padding: 20,
+        paddingBottom: 50,
     },
-    title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: '#FFF',
-        textAlign: 'center',
+    glassContainer: {
+        backgroundColor: 'rgba(10, 25, 47, 0.7)', // Dark Navy Glass
+        borderRadius: 24,
+        padding: 24,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 215, 0, 0.5)', // Thin Gold Border
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.5,
+        shadowRadius: 20,
+    },
+    logoContainer: {
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    logo: {
+        width: 80,
+        height: 80,
         marginBottom: 10,
     },
-    subtitle: {
-        fontSize: 18,
-        color: '#CCC',
-        textAlign: 'center',
-        marginBottom: 40,
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#FFD700',
+        letterSpacing: 0.5,
+        textShadowColor: 'rgba(255, 215, 0, 0.3)',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 10,
     },
-    input: {
-        backgroundColor: '#1A1A1A',
-        color: '#FFF',
-        padding: 15,
-        borderRadius: 8,
-        marginBottom: 15,
-        fontSize: 16,
-    },
-    button: {
-        backgroundColor: '#34C759', // Green for Sign Up
-        padding: 15,
-        borderRadius: 8,
-        alignItems: 'center',
+    registerButton: {
         marginTop: 10,
     },
-    buttonText: {
-        color: '#FFF',
-        fontSize: 18,
-        fontWeight: 'bold',
+    dividerContainer: {
+        height: 20,
+    },
+    footer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginTop: 24,
+    },
+    footerText: {
+        color: '#8899A6',
+        fontSize: 14,
     },
     linkText: {
-        color: '#007AFF',
-        textAlign: 'center',
-        marginTop: 20,
-        fontSize: 16,
+        color: '#FFD700',
+        fontSize: 14,
+        fontWeight: 'bold',
+        marginLeft: 5,
     },
 });

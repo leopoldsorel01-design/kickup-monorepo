@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		1686CDF3A78B65175A0C6D6E /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 9B5447D04A6AEF50546F7A0A /* GoogleService-Info.plist */; };
 		4847D524422B45D847C8E907 /* Pods_KickUpMobile.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 776EAC1D3962B65376829C1C /* Pods_KickUpMobile.framework */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		8087ECAAFE9485CA75DDABB6 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
@@ -24,6 +25,7 @@
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = KickUpMobile/AppDelegate.swift; sourceTree = "<group>"; };
 		776EAC1D3962B65376829C1C /* Pods_KickUpMobile.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_KickUpMobile.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = KickUpMobile/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		9B5447D04A6AEF50546F7A0A /* GoogleService-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "KickUpMobile/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -47,6 +49,7 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
+				9B5447D04A6AEF50546F7A0A /* GoogleService-Info.plist */,
 			);
 			name = KickUpMobile;
 			sourceTree = "<group>";
@@ -162,6 +165,7 @@
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				8087ECAAFE9485CA75DDABB6 /* PrivacyInfo.xcprivacy in Resources */,
+				1686CDF3A78B65175A0C6D6E /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

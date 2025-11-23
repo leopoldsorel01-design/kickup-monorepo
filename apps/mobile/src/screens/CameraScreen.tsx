@@ -3,7 +3,14 @@ import { StyleSheet, View, Text, ActivityIndicator, TouchableOpacity, Alert, Ima
 import { Camera, useCameraDevice, useCameraPermission, PhotoFile } from 'react-native-vision-camera';
 import { StorageService } from '../services/storage';
 
-export function CameraScreen() {
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../types';
+
+type CameraScreenProps = {
+    navigation: NativeStackNavigationProp<RootStackParamList, 'Camera'>;
+};
+
+export function CameraScreen({ navigation }: CameraScreenProps) {
     const { hasPermission, requestPermission } = useCameraPermission();
     const device = useCameraDevice('back');
     const camera = useRef<Camera>(null);
@@ -65,6 +72,15 @@ export function CameraScreen() {
 
     return (
         <View style={styles.container}>
+            <View style={styles.header}>
+                <TouchableOpacity
+                    style={styles.settingsButton}
+                    onPress={() => navigation.navigate('Settings')}
+                >
+                    <Text style={styles.settingsText}>⚙️</Text>
+                </TouchableOpacity>
+            </View>
+
             {photo ? (
                 <View style={styles.previewContainer}>
                     <Image source={{ uri: 'file://' + photo.path }} style={styles.preview} />
@@ -99,8 +115,20 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: 'black',
-        justifyContent: 'center',
-        alignItems: 'center',
+    },
+    header: {
+        position: 'absolute',
+        top: 50,
+        right: 20,
+        zIndex: 10,
+    },
+    settingsButton: {
+        padding: 10,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        borderRadius: 20,
+    },
+    settingsText: {
+        fontSize: 24,
     },
     text: {
         color: 'white',
