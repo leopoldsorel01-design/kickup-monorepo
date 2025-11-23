@@ -14,7 +14,7 @@ export function LoginScreen({ navigation }: Props) {
 
     useEffect(() => {
         GoogleSignin.configure({
-            webClientId: 'YOUR_WEB_CLIENT_ID', // From Firebase Console
+            webClientId: '576915762654-k6r7ggc7aj0btgv1l49g31opivt8rn0t.apps.googleusercontent.com',
         });
     }, []);
 
