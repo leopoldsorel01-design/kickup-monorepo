@@ -7,13 +7,25 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>KickUpMobile</string>
+	<string>KickUp!</string>
 	<key>NSCameraUsageDescription</key>
 	<string>KickUp needs camera access to track your ball and body movements for drills.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>KickUp needs microphone access for voice commands and coaching feedback.</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<!-- TODO: Replace this with the REVERSE_CLIENT_ID from your GoogleService-Info.plist -->
+				<string>com.googleusercontent.apps.YOUR-CLIENT-ID-HERE</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>

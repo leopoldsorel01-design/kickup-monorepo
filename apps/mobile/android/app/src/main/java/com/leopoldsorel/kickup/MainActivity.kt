@@ -1,4 +1,4 @@
-package com.kickupmobile
+package com.leopoldsorel.kickup
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

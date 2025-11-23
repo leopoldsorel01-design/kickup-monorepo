@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Platform } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { AuthService } from '../services/auth';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
@@ -10,6 +11,12 @@ export function LoginScreen({ navigation }: Props) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        GoogleSignin.configure({
+            webClientId: 'YOUR_WEB_CLIENT_ID', // From Firebase Console
+        });
+    }, []);
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -24,8 +31,30 @@ export function LoginScreen({ navigation }: Props) {
         if (error) {
             Alert.alert('Login Failed', error);
         } else {
-            // Navigation will be handled by App.tsx auth listener, or we can force it here
-            // For now, let's force it to be safe
+            navigation.navigate('Camera');
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        setLoading(true);
+        const { user, error } = await AuthService.signInWithGoogle();
+        setLoading(false);
+
+        if (error) {
+            Alert.alert('Google Login Failed', error);
+        } else {
+            navigation.navigate('Camera');
+        }
+    };
+
+    const handleAppleLogin = async () => {
+        setLoading(true);
+        const { user, error } = await AuthService.signInWithApple();
+        setLoading(false);
+
+        if (error) {
+            Alert.alert('Apple Login Failed', error);
+        } else {
             navigation.navigate('Camera');
         }
     };
@@ -60,6 +89,22 @@ export function LoginScreen({ navigation }: Props) {
                     <Text style={styles.buttonText}>Login</Text>
                 )}
             </TouchableOpacity>
+
+            <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>OR</Text>
+                <View style={styles.dividerLine} />
+            </View>
+
+            <TouchableOpacity style={[styles.socialButton, styles.googleButton]} onPress={handleGoogleLogin} disabled={loading}>
+                <Text style={styles.socialButtonText}>Sign in with Google</Text>
+            </TouchableOpacity>
+
+            {Platform.OS === 'ios' && (
+                <TouchableOpacity style={[styles.socialButton, styles.appleButton]} onPress={handleAppleLogin} disabled={loading}>
+                    <Text style={styles.socialButtonText}>Sign in with Apple</Text>
+                </TouchableOpacity>
+            )}
 
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
                 <Text style={styles.linkText}>Don't have an account? Register</Text>
@@ -107,6 +152,40 @@ const styles = StyleSheet.create({
         color: '#FFF',
         fontSize: 18,
         fontWeight: 'bold',
+    },
+    divider: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 20,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#333',
+    },
+    dividerText: {
+        color: '#666',
+        paddingHorizontal: 10,
+    },
+    socialButton: {
+        padding: 15,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: '#333',
+    },
+    googleButton: {
+        backgroundColor: '#FFF',
+    },
+    appleButton: {
+        backgroundColor: '#000',
+        borderColor: '#FFF',
+    },
+    socialButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#000', // Default for Google
     },
     linkText: {
         color: '#007AFF',

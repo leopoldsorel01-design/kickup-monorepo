@@ -1,4 +1,4 @@
-package com.kickupmobile
+package com.leopoldsorel.kickup
 
 import android.app.Application
 import com.facebook.react.PackageList
