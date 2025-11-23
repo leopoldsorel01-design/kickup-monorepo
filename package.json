@@ -16,5 +16,9 @@
         "turbo": "latest",
         "prettier": "latest"
     },
+    "resolutions": {
+        "react": "19.1.1",
+        "@types/react": "^19.1.1"
+    },
     "packageManager": "yarn@1.22.19"
 }

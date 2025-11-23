@@ -3,5 +3,3 @@ export type RootStackParamList = {
     Register: undefined;
     Camera: undefined;
 };
-
-export type ScreenName = 'Login' | 'Register' | 'Camera';

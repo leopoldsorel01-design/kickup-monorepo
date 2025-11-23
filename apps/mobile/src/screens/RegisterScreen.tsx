@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { ScreenName } from '../types';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../types';
+import { AuthService } from '../services/auth';
 
-interface Props {
-    onNavigate: (screen: ScreenName) => void;
-}
+type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
-export function RegisterScreen({ onNavigate }: Props) {
+export function RegisterScreen({ navigation }: Props) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [dob, setDob] = useState(''); // Format: YYYY-MM-DD
+    const [loading, setLoading] = useState(false);
 
-    const handleRegister = () => {
-        // Mock Registration Logic
+    const handleRegister = async () => {
         if (!email || !password || !dob) {
             Alert.alert('Error', 'Please fill in all fields');
             return;
@@ -25,9 +25,18 @@ export function RegisterScreen({ onNavigate }: Props) {
 
         if (age < 13) {
             Alert.alert('Parental Consent Required', 'Since you are under 13, we need your parent to approve this account.');
-            // In real app, navigate to ParentEmailScreen
+            return;
+        }
+
+        setLoading(true);
+        const { user, error } = await AuthService.register(email, password);
+        setLoading(false);
+
+        if (error) {
+            Alert.alert('Registration Failed', error);
         } else {
-            onNavigate('Camera');
+            // Navigation will be handled by App.tsx auth listener, or we can force it here
+            navigation.navigate('Camera');
         }
     };
 
@@ -62,11 +71,15 @@ export function RegisterScreen({ onNavigate }: Props) {
                 keyboardType="numeric"
             />
 
-            <TouchableOpacity style={styles.button} onPress={handleRegister}>
-                <Text style={styles.buttonText}>Sign Up</Text>
+            <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
+                {loading ? (
+                    <ActivityIndicator color="#FFF" />
+                ) : (
+                    <Text style={styles.buttonText}>Sign Up</Text>
+                )}
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => onNavigate('Login')}>
+            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
                 <Text style={styles.linkText}>Already have an account? Login</Text>
             </TouchableOpacity>
         </View>

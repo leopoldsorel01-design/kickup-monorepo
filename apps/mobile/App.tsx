@@ -1,30 +1,55 @@
-import React, { useState } from 'react';
-import { SafeAreaView, Text, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, ActivityIndicator } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { RegisterScreen } from './src/screens/RegisterScreen';
 import { CameraScreen } from './src/screens/CameraScreen';
-import { ScreenName } from './src/types';
+import { RootStackParamList } from './src/types';
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function App(): React.JSX.Element {
-  const [currentScreen, setCurrentScreen] = useState<ScreenName>('Login');
+  const [initializing, setInitializing] = useState(true);
+  const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
 
-  const renderScreen = () => {
-    switch (currentScreen) {
-      case 'Login':
-        return <LoginScreen onNavigate={setCurrentScreen} />;
-      case 'Register':
-        return <RegisterScreen onNavigate={setCurrentScreen} />;
-      case 'Camera':
-        return <CameraScreen />;
-      default:
-        return <LoginScreen onNavigate={setCurrentScreen} />;
-    }
-  };
+  // Handle user state changes
+  function onAuthStateChanged(user: FirebaseAuthTypes.User | null) {
+    setUser(user);
+    if (initializing) setInitializing(false);
+  }
+
+  useEffect(() => {
+    const subscriber = auth().onAuthStateChanged(onAuthStateChanged);
+    return subscriber; // unsubscribe on unmount
+  }, []);
+
+  if (initializing) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'black' }}>
+        <ActivityIndicator size="large" color="#FFF" />
+      </View>
+    );
+  }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: 'black' }}>
-      {renderScreen()}
-    </SafeAreaView>
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <Stack.Navigator
+          initialRouteName={user ? "Camera" : "Login"}
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: 'black' }
+          }}
+        >
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="Camera" component={CameraScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
 

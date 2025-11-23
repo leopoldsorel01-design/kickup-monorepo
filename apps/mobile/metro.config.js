@@ -18,6 +18,12 @@ const root = path.resolve(__dirname, '../..');
  */
 const config = {
     watchFolders: [root],
+    resolver: {
+        extraNodeModules: {
+            'react': path.resolve(root, 'node_modules/react'),
+            'react-native': path.resolve(root, 'node_modules/react-native'),
+        },
+    },
 };
 
 module.exports = mergeConfig(getDefaultConfig(__dirname), config);

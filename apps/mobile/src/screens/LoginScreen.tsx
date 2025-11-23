@@ -1,21 +1,32 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { ScreenName } from '../types';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../types';
+import { AuthService } from '../services/auth';
 
-interface Props {
-    onNavigate: (screen: ScreenName) => void;
-}
+type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
-export function LoginScreen({ onNavigate }: Props) {
+export function LoginScreen({ navigation }: Props) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleLogin = () => {
-        // Mock Login Logic
-        if (email && password) {
-            onNavigate('Camera');
-        } else {
+    const handleLogin = async () => {
+        if (!email || !password) {
             Alert.alert('Error', 'Please enter email and password');
+            return;
+        }
+
+        setLoading(true);
+        const { user, error } = await AuthService.login(email, password);
+        setLoading(false);
+
+        if (error) {
+            Alert.alert('Login Failed', error);
+        } else {
+            // Navigation will be handled by App.tsx auth listener, or we can force it here
+            // For now, let's force it to be safe
+            navigation.navigate('Camera');
         }
     };
 
@@ -42,11 +53,15 @@ export function LoginScreen({ onNavigate }: Props) {
                 secureTextEntry
             />
 
-            <TouchableOpacity style={styles.button} onPress={handleLogin}>
-                <Text style={styles.buttonText}>Login</Text>
+            <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
+                {loading ? (
+                    <ActivityIndicator color="#FFF" />
+                ) : (
+                    <Text style={styles.buttonText}>Login</Text>
+                )}
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => onNavigate('Register')}>
+            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
                 <Text style={styles.linkText}>Don't have an account? Register</Text>
             </TouchableOpacity>
         </View>
