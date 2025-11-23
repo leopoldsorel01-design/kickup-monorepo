@@ -1,0 +1,12 @@
+{
+    "name": "@kickup/ui-kit",
+    "version": "0.0.0",
+    "main": "index.tsx",
+    "dependencies": {
+        "react": "18.2.0",
+        "react-native": "0.72.6"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0"
+    }
+}

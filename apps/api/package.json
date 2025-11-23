@@ -1,0 +1,20 @@
+{
+    "name": "@kickup/api",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "nodemon src/index.ts",
+        "build": "tsc",
+        "start": "node dist/index.js",
+        "lint": "eslint ."
+    },
+    "dependencies": {
+        "@apollo/server": "^4.0.0",
+        "graphql": "^16.0.0",
+        "@kickup/db-schema": "*"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "nodemon": "^3.0.0"
+    }
+}

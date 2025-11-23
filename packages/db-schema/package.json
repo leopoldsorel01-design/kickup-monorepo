@@ -1,0 +1,9 @@
+{
+    "name": "@kickup/db-schema",
+    "version": "0.0.0",
+    "main": "index.ts",
+    "dependencies": {},
+    "devDependencies": {
+        "typescript": "^5.0.0"
+    }
+}
