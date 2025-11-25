@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert, Image, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Alert, Image, KeyboardAvoidingView, Platform, ScrollView, ImageBackground } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import LinearGradient from 'react-native-linear-gradient';
 import { RootStackParamList } from '../types';
 import { AuthService } from '../services/auth';
 import { AuthInput, AuthButton, SocialButton } from '../components/AuthComponents';
@@ -66,24 +65,26 @@ export const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
     };
 
     return (
-        <LinearGradient
-            colors={['#0a192f', '#000000']} // Midnight Blue to Black
+        <ImageBackground
+            source={require('../assets/images/auth_stadium.png')}
             style={styles.background}
+            resizeMode="cover"
         >
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.container}
             >
                 <ScrollView contentContainerStyle={styles.scrollContent}>
+                    <View style={styles.logoContainer}>
+                        <Image
+                            source={require('../assets/images/logo_gold_soccer.png')}
+                            style={styles.logo}
+                            resizeMode="contain"
+                        />
+                        <Text style={styles.title}>Create Your Account</Text>
+                    </View>
+
                     <View style={styles.glassContainer}>
-                        <View style={styles.logoContainer}>
-                            <Image
-                                source={require('../assets/images/logo_gold_soccer.png')}
-                                style={styles.logo}
-                                resizeMode="contain"
-                            />
-                            <Text style={styles.title}>Create Your Account</Text>
-                        </View>
 
                         <AuthInput
                             placeholder="Full Name"
@@ -154,7 +155,7 @@ export const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
-        </LinearGradient>
+        </ImageBackground>
     );
 };
 
@@ -171,7 +172,7 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         justifyContent: 'center',
         padding: 20,
-        paddingBottom: 50,
+        paddingBottom: 150, // Increased padding to prevent cut-off
     },
     glassContainer: {
         backgroundColor: 'rgba(10, 25, 47, 0.7)', // Dark Navy Glass
@@ -187,11 +188,13 @@ const styles = StyleSheet.create({
     logoContainer: {
         alignItems: 'center',
         marginBottom: 20,
+        backgroundColor: 'transparent',
     },
     logo: {
         width: 80,
         height: 80,
         marginBottom: 10,
+        backgroundColor: 'transparent',
     },
     title: {
         fontSize: 24,

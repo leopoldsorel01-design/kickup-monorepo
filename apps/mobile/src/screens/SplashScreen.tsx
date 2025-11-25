@@ -29,7 +29,7 @@ export const SplashScreen = () => {
 
     return (
         <ImageBackground
-            source={require('../assets/images/splash_cinematic.png')}
+            source={require('../assets/images/splash_tunnel_wide.png')}
             style={styles.background}
             resizeMode="cover"
         >
@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     titleText: {
         fontSize: 36,
         fontWeight: '800',
-        color: '#FFFFFF',
+        color: '#EDC967', // Warm Ballon d'Or Gold
         textAlign: 'center',
         textShadowColor: 'rgba(0, 0, 0, 0.75)',
         textShadowOffset: { width: 0, height: 2 },
