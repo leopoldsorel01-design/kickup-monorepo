@@ -1,77 +1,106 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-// import { Camera } from 'react-native-vision-camera'; // Placeholder for actual camera
-import { feedbackSessionMachine, ActionableTip } from '@kickup/drill-engine';
-import { interpret } from 'xstate';
+import { useApp } from '../context/AppContext';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 const DrillScreen = () => {
     const insets = useSafeAreaInsets();
-    const [currentTip, setCurrentTip] = useState<ActionableTip | null>(null);
-    const [isCorrectForm, setIsCorrectForm] = useState(false);
-    const [status, setStatus] = useState('Idle');
+    const { user, logDrillSession } = useApp();
 
-    // Initialize XState Machine (v4)
-    // In a real app, use useMachine hook or Context Provider
-    const [drillService] = useState(() => interpret(feedbackSessionMachine).start());
+    // Drill State
+    const [status, setStatus] = useState<'IDLE' | 'ACTIVE' | 'COMPLETE'>('IDLE');
+    const [score, setScore] = useState(0);
+    const [timeLeft, setTimeLeft] = useState(30); // 30 second drill
+    const [paceColor, setPaceColor] = useState('#FFF');
+
+    // Ghost Mode Logic
+    const TARGET_PACE = 0.5; // 0.5 reps per second (15 reps in 30s)
+    const record = user.bestDrillScore;
 
     useEffect(() => {
-        const subscription = drillService.subscribe((state) => {
-            setStatus(state.value as string);
+        let interval: NodeJS.Timeout;
+        if (status === 'ACTIVE') {
+            interval = setInterval(() => {
+                setTimeLeft(prev => {
+                    if (prev <= 1) {
+                        endDrill();
+                        return 0;
+                    }
+                    return prev - 1;
+                });
 
-            if (state.matches('generating_feedback') && state.context.tips.length > 0) {
-                setCurrentTip(state.context.tips[0]); // Show first tip
-            }
-        });
-
-        return () => subscription.unsubscribe();
-    }, [drillService]);
+                // Ghost Mode Color Logic
+                const timeElapsed = 30 - timeLeft;
+                const expectedScore = timeElapsed * TARGET_PACE;
+                if (score > expectedScore) {
+                    setPaceColor('#00FF00'); // Green (Ahead of pace)
+                } else {
+                    setPaceColor('#FF4444'); // Red (Behind pace)
+                }
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [status, timeLeft, score]);
 
     const startDrill = () => {
-        drillService.send('START_SESSION');
-        // Simulate flow for demo
-        setTimeout(() => drillService.send('BODY_DETECTED'), 1000);
-        setTimeout(() => drillService.send('JOINTS_LOCKED'), 2000);
-        setTimeout(() => {
-            setIsCorrectForm(true); // Simulate "Gold Overlay"
-            setTimeout(() => setIsCorrectForm(false), 500);
-            drillService.send('DRILL_COMPLETE');
-        }, 5000);
+        setStatus('ACTIVE');
+        setScore(0);
+        setTimeLeft(30);
+    };
+
+    const handleTap = () => {
+        if (status === 'ACTIVE') {
+            setScore(prev => prev + 1);
+        }
+    };
+
+    const endDrill = () => {
+        setStatus('COMPLETE');
+        logDrillSession(score);
+        Alert.alert('🏁 Drill Complete', `Score: ${score}\nBest: ${Math.max(score, record)}`);
     };
 
     return (
         <View style={styles.container}>
             {/* Camera View Placeholder */}
-            <View style={styles.cameraPlaceholder}>
-                <Text style={styles.cameraText}>AR Camera Feed</Text>
-                {/* Visual Feedback: Gold Overlay */}
-                {isCorrectForm && <View style={styles.goldOverlay} />}
-            </View>
+            <TouchableOpacity
+                activeOpacity={1}
+                style={styles.cameraPlaceholder}
+                onPress={handleTap}
+            >
+                <Text style={styles.cameraText}>
+                    {status === 'IDLE' ? 'Tap Start to Begin' : 'Tap to Count Reps (Simulated AI)'}
+                </Text>
 
-            {/* Minimal UI Overlay */}
+                {/* Ghost Mode UI */}
+                <View style={styles.ghostOverlay}>
+                    <Text style={styles.recordText}>👻 Record: {record}</Text>
+                    <Text style={[styles.scoreText, { color: paceColor }]}>
+                        {score}
+                    </Text>
+                    {status === 'ACTIVE' && (
+                        <Text style={styles.timerText}>{timeLeft}s</Text>
+                    )}
+                </View>
+            </TouchableOpacity>
+
+            {/* Controls */}
             <View style={[styles.overlay, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
                 <View style={styles.header}>
-                    <Text style={styles.statusText}>{status.toUpperCase()}</Text>
+                    <Text style={styles.statusText}>{status}</Text>
                 </View>
 
-                {/* Insight Card: One at a time */}
-                {currentTip && (
-                    <View style={styles.insightCard}>
-                        <Text style={styles.tipTitle}>AI COACH</Text>
-                        <Text style={styles.tipText}>{currentTip.text}</Text>
-                        <Text style={styles.correctionText}>{currentTip.correction}</Text>
-                        <TouchableOpacity onPress={() => setCurrentTip(null)} style={styles.dismissButton}>
-                            <Text style={styles.dismissText}>Got it</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-
-                {/* One Tap to Train */}
-                {status === 'idle' && (
+                {status === 'IDLE' && (
                     <TouchableOpacity style={styles.startButton} onPress={startDrill}>
                         <View style={styles.innerCircle} />
+                    </TouchableOpacity>
+                )}
+
+                {status === 'COMPLETE' && (
+                    <TouchableOpacity style={styles.restartButton} onPress={() => setStatus('IDLE')}>
+                        <Text style={styles.restartText}>Reset</Text>
                     </TouchableOpacity>
                 )}
             </View>
@@ -94,18 +123,39 @@ const styles = StyleSheet.create({
         color: '#333',
         fontSize: 20,
         fontWeight: 'bold',
+        position: 'absolute',
+        top: '40%',
     },
-    goldOverlay: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(255, 215, 0, 0.3)', // Gold with opacity
-        borderWidth: 4,
-        borderColor: '#FFD700',
+    ghostOverlay: {
+        position: 'absolute',
+        top: 100,
+        alignItems: 'center',
+    },
+    recordText: {
+        color: 'rgba(255, 255, 255, 0.5)',
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 8,
+    },
+    scoreText: {
+        fontSize: 80,
+        fontWeight: 'bold',
+        textShadowColor: 'rgba(0, 0, 0, 0.75)',
+        textShadowOffset: { width: -1, height: 1 },
+        textShadowRadius: 10
+    },
+    timerText: {
+        color: '#FFD700',
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginTop: 8,
     },
     overlay: {
         flex: 1,
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 20,
+        pointerEvents: 'box-none', // Allow touches to pass through to camera placeholder
     },
     header: {
         marginTop: 20,
@@ -119,46 +169,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
         letterSpacing: 1,
-    },
-    insightCard: {
-        position: 'absolute',
-        bottom: 120,
-        width: width - 40,
-        backgroundColor: '#1E1E1E',
-        borderRadius: 16,
-        padding: 24,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 20,
-        elevation: 10,
-        borderLeftWidth: 4,
-        borderLeftColor: '#FFD700',
-    },
-    tipTitle: {
-        color: '#FFD700',
-        fontSize: 12,
-        fontWeight: 'bold',
-        marginBottom: 8,
-        letterSpacing: 1,
-    },
-    tipText: {
-        color: '#FFF',
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 8,
-    },
-    correctionText: {
-        color: '#AAA',
-        fontSize: 16,
-    },
-    dismissButton: {
-        marginTop: 16,
-        alignSelf: 'flex-end',
-    },
-    dismissText: {
-        color: '#FFD700',
-        fontWeight: 'bold',
     },
     startButton: {
         width: 80,
@@ -176,6 +186,18 @@ const styles = StyleSheet.create({
         height: 60,
         borderRadius: 30,
         backgroundColor: '#FFF',
+    },
+    restartButton: {
+        marginBottom: 40,
+        backgroundColor: '#FFD700',
+        paddingHorizontal: 32,
+        paddingVertical: 12,
+        borderRadius: 24,
+    },
+    restartText: {
+        color: '#000',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
 });
 

@@ -16,6 +16,8 @@ import SocialFeedScreen from './src/screens/SocialFeedScreen';
 import LockerRoomScreen from './src/screens/LockerRoomScreen';
 import CalendarScreen from './src/screens/CalendarScreen';
 import HealthCheckScreen from './src/screens/HealthCheckScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
+import { AppProvider } from './src/context/AppContext';
 import { RootStackParamList } from './src/types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -53,33 +55,36 @@ function App(): React.JSX.Element {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        <Stack.Navigator
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: 'black' }
-          }}
-        >
-          {user ? (
-            <>
-              <Stack.Screen name="Home" component={HomeScreen} />
-              <Stack.Screen name="Camera" component={CameraScreen} />
-              <Stack.Screen name="Settings" component={SettingsScreen} />
-              <Stack.Screen name="Drill" component={DrillScreen} />
-              <Stack.Screen name="Matchmaking" component={MatchmakingScreen} />
-              <Stack.Screen name="SocialFeed" component={SocialFeedScreen} />
-              <Stack.Screen name="LockerRoom" component={LockerRoomScreen} />
-              <Stack.Screen name="Calendar" component={CalendarScreen} />
-              <Stack.Screen name="HealthCheck" component={HealthCheckScreen} />
-            </>
-          ) : (
-            <>
-              <Stack.Screen name="Login" component={LoginScreen} />
-              <Stack.Screen name="Register" component={RegisterScreen} />
-            </>
-          )}
-        </Stack.Navigator>
-      </NavigationContainer>
+      <AppProvider>
+        <NavigationContainer>
+          <Stack.Navigator
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: 'black' }
+            }}
+          >
+            {user ? (
+              <>
+                <Stack.Screen name="Home" component={HomeScreen} />
+                <Stack.Screen name="Camera" component={CameraScreen} />
+                <Stack.Screen name="Settings" component={SettingsScreen} />
+                <Stack.Screen name="Drill" component={DrillScreen} />
+                <Stack.Screen name="Matchmaking" component={MatchmakingScreen} />
+                <Stack.Screen name="SocialFeed" component={SocialFeedScreen} />
+                <Stack.Screen name="LockerRoom" component={LockerRoomScreen} />
+                <Stack.Screen name="Calendar" component={CalendarScreen} />
+                <Stack.Screen name="HealthCheck" component={HealthCheckScreen} />
+                <Stack.Screen name="Profile" component={ProfileScreen} />
+              </>
+            ) : (
+              <>
+                <Stack.Screen name="Login" component={LoginScreen} />
+                <Stack.Screen name="Register" component={RegisterScreen} />
+              </>
+            )}
+          </Stack.Navigator>
+        </NavigationContainer>
+      </AppProvider>
     </SafeAreaProvider>
   );
 }

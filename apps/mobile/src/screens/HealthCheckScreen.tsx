@@ -1,16 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-// Note: In a real app, use @react-native-community/slider
-// For now, we'll implement a simple custom slider or buttons
+import { useApp } from '../context/AppContext';
 
 const HealthCheckScreen = () => {
     const insets = useSafeAreaInsets();
+    const { fatigueFlag, setFatigueFlag } = useApp();
     const [mood, setMood] = useState(5);
-    const [fatigue, setFatigue] = useState(5);
+    const [fatigue, setFatigue] = useState(fatigueFlag ? 8 : 5); // Default higher if flagged
+
+    useEffect(() => {
+        if (fatigueFlag) {
+            Alert.alert(
+                '⚠️ Fatigue Detected',
+                'Your AI Garde du Corps noticed high intensity. Please check your fatigue levels.',
+                [{ text: 'OK' }]
+            );
+        }
+    }, [fatigueFlag]);
 
     const handleSave = () => {
-        Alert.alert('Health Logged', `Mood: ${mood}/10\nFatigue: ${fatigue}/10`);
+        // Smart Rest Logic
+        if (fatigue >= 8) {
+            setFatigueFlag(true);
+            Alert.alert(
+                '🛌 Smart Rest Activated',
+                'Your fatigue is high. We have updated your Calendar to suggest Yoga/Rest instead of heavy training.'
+            );
+        } else {
+            setFatigueFlag(false);
+            Alert.alert('✅ Status Logged', 'You are good to go! Stay safe.');
+        }
     };
 
     const renderScale = (value: number, setValue: (val: number) => void, label: string) => (

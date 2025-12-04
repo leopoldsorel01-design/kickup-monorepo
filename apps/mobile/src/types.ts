@@ -10,4 +10,5 @@ export type RootStackParamList = {
     LockerRoom: undefined;
     Calendar: undefined;
     HealthCheck: undefined;
+    Profile: undefined;
 };

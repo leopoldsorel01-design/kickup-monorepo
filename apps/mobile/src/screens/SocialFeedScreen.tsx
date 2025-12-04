@@ -1,52 +1,44 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useApp, Post, HypeType } from '../context/AppContext';
 
-interface Comment {
-    id: string;
-    username: string;
-    text: string;
-    createdAt: string;
-}
+// Simple Challenge Timer Component
+const ChallengeTimer = () => {
+    const [timeLeft, setTimeLeft] = useState(24 * 60 * 60); // 24 hours in seconds
 
-interface Post {
-    id: string;
-    username: string;
-    content: string;
-    likes: number;
-    comments: Comment[];
-    createdAt: string;
-}
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
 
-const MOCK_FEED: Post[] = [
-    {
-        id: '101',
-        username: 'MbappeFan',
-        content: 'Just hit a 50 streak on the juggling drill! ⚽️🔥',
-        likes: 24,
-        comments: [{ id: 'c1', username: 'CoachMike', text: 'Great form!', createdAt: '2m ago' }],
-        createdAt: '10m ago'
-    },
-    {
-        id: '102',
-        username: 'LocalLegend',
-        content: 'Looking for a keeper for Tuesday night match. DM me.',
-        likes: 5,
-        comments: [],
-        createdAt: '1h ago'
-    }
-];
+    const formatTime = (seconds: number) => {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+        return `${h}h ${m}m ${s}s`;
+    };
+
+    return (
+        <View style={styles.timerContainer}>
+            <Text style={styles.timerLabel}>⏳ Chrono-Défi Ends in:</Text>
+            <Text style={styles.timerValue}>{formatTime(timeLeft)}</Text>
+        </View>
+    );
+};
 
 const SocialFeedScreen = () => {
     const insets = useSafeAreaInsets();
-    const [posts, setPosts] = useState<Post[]>(MOCK_FEED);
+    const { posts, reactToPost, sendSquadInvite } = useApp();
 
-    const handleLike = (postId: string) => {
-        setPosts(currentPosts =>
-            currentPosts.map(post =>
-                post.id === postId ? { ...post, likes: post.likes + 1 } : post
-            )
-        );
+    const handleReaction = (postId: string, type: HypeType) => {
+        reactToPost(postId, type);
+    };
+
+    const handleRecruit = (username: string) => {
+        sendSquadInvite(username);
     };
 
     const renderPost = ({ item }: { item: Post }) => (
@@ -57,20 +49,47 @@ const SocialFeedScreen = () => {
                     <Text style={styles.username}>{item.username}</Text>
                     <Text style={styles.timestamp}>{item.createdAt}</Text>
                 </View>
+                {/* Mercato Integration */}
+                <TouchableOpacity
+                    style={styles.recruitButton}
+                    onPress={() => handleRecruit(item.username)}
+                >
+                    <Text style={styles.recruitText}>📝 Recruter</Text>
+                </TouchableOpacity>
             </View>
 
             <Text style={styles.content}>{item.content}</Text>
 
-            <View style={styles.actions}>
+            {/* Chrono-Défi Timer */}
+            {item.isChallenge && <ChallengeTimer />}
+
+            {/* Hype Tags Reaction Bar */}
+            <View style={styles.reactionBar}>
                 <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={() => handleLike(item.id)}
+                    style={[styles.reactionButton, item.userReaction === 'TECHNIQUE' && styles.reactionActive]}
+                    onPress={() => handleReaction(item.id, 'TECHNIQUE')}
                 >
-                    <Text style={styles.actionText}>👊 {item.likes} Fist Bumps</Text>
+                    <Text style={styles.reactionIcon}>👟</Text>
+                    <Text style={styles.reactionCount}>{item.reactions.TECHNIQUE}</Text>
+                    <Text style={styles.reactionLabel}>Tech</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.actionButton}>
-                    <Text style={styles.actionText}>💬 {item.comments.length} Hype</Text>
+                <TouchableOpacity
+                    style={[styles.reactionButton, item.userReaction === 'EFFORT' && styles.reactionActive]}
+                    onPress={() => handleReaction(item.id, 'EFFORT')}
+                >
+                    <Text style={styles.reactionIcon}>💪</Text>
+                    <Text style={styles.reactionCount}>{item.reactions.EFFORT}</Text>
+                    <Text style={styles.reactionLabel}>Effort</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.reactionButton, item.userReaction === 'VISION' && styles.reactionActive]}
+                    onPress={() => handleReaction(item.id, 'VISION')}
+                >
+                    <Text style={styles.reactionIcon}>🧠</Text>
+                    <Text style={styles.reactionCount}>{item.reactions.VISION}</Text>
+                    <Text style={styles.reactionLabel}>Vision</Text>
                 </TouchableOpacity>
             </View>
 
@@ -89,7 +108,7 @@ const SocialFeedScreen = () => {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
-            <Text style={styles.title}>Community Feed</Text>
+            <Text style={styles.title}>Mercato du Feed</Text>
             <FlatList
                 data={posts}
                 renderItem={renderPost}
@@ -145,24 +164,75 @@ const styles = StyleSheet.create({
         color: '#AAA',
         fontSize: 12,
     },
+    recruitButton: {
+        marginLeft: 'auto',
+        backgroundColor: '#333',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#FFD700',
+    },
+    recruitText: {
+        color: '#FFD700',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
     content: {
         color: '#FFF',
         fontSize: 16,
         lineHeight: 24,
         marginBottom: 16,
     },
-    actions: {
+    timerContainer: {
+        backgroundColor: 'rgba(255, 0, 0, 0.2)',
+        padding: 8,
+        borderRadius: 8,
+        marginBottom: 16,
         flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'red',
+    },
+    timerLabel: {
+        color: '#FF4444',
+        fontWeight: 'bold',
+    },
+    timerValue: {
+        color: '#FFF',
+        fontFamily: 'monospace',
+        fontWeight: 'bold',
+    },
+    reactionBar: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
         borderTopWidth: 1,
         borderTopColor: '#333',
         paddingTop: 12,
     },
-    actionButton: {
-        marginRight: 24,
+    reactionButton: {
+        alignItems: 'center',
+        padding: 8,
+        borderRadius: 8,
+        minWidth: 60,
     },
-    actionText: {
-        color: '#FFD700',
-        fontWeight: '600',
+    reactionActive: {
+        backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    },
+    reactionIcon: {
+        fontSize: 20,
+        marginBottom: 4,
+    },
+    reactionCount: {
+        color: '#FFF',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    reactionLabel: {
+        color: '#AAA',
+        fontSize: 10,
+        marginTop: 2,
     },
     commentsSection: {
         marginTop: 12,

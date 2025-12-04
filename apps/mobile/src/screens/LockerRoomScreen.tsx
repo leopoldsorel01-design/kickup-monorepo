@@ -1,108 +1,209 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, Image } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native';
+import { JerseyIcon } from '../components/JerseyIcon';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-interface DigitalAsset {
-    id: string;
-    name: string;
-    type: string;
-    imageUrl: string; // Placeholder for now
-}
+import { useApp } from '../context/AppContext';
+import { RadarChart } from '../components/RadarChart';
 
-const MOCK_ASSETS: DigitalAsset[] = [
-    { id: 'a1', name: 'Golden Boots', type: 'Boots', imageUrl: 'boots_gold' },
-    { id: 'a2', name: 'KickUp Jersey', type: 'Jersey', imageUrl: 'jersey_home' },
-    { id: 'a3', name: 'Neon Ball', type: 'Equipment', imageUrl: 'ball_neon' }
-];
+const COLORS = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#00FFFF', '#FF00FF', '#FFFFFF', '#000000', '#FFA500', '#800080'];
 
-const LockerRoomScreen = () => {
-    const insets = useSafeAreaInsets();
+export const LockerRoomScreen = () => {
+    const { user } = useApp();
+    const [primaryColor, setPrimaryColor] = useState('#FFFFFF');
+    const [secondaryColor, setSecondaryColor] = useState('#000000');
+    const [number, setNumber] = useState('10');
 
-    const renderAsset = ({ item }: { item: DigitalAsset }) => (
-        <View style={styles.card}>
-            <View style={styles.iconPlaceholder}>
-                <Text style={styles.iconText}>👕</Text>
-            </View>
-            <Text style={styles.assetName}>{item.name}</Text>
-            <Text style={styles.assetType}>{item.type}</Text>
-        </View>
-    );
+    useEffect(() => {
+        loadKit();
+    }, []);
+
+    const loadKit = async () => {
+        try {
+            const savedKit = await AsyncStorage.getItem('KICKUP_KIT');
+            if (savedKit) {
+                const { primary, secondary, num } = JSON.parse(savedKit);
+                setPrimaryColor(primary);
+                setSecondaryColor(secondary);
+                setNumber(num);
+            }
+        } catch (e) {
+            console.error('Failed to load kit', e);
+        }
+    };
+
+    const saveKit = async () => {
+        try {
+            const kit = { primary: primaryColor, secondary: secondaryColor, num: number };
+            await AsyncStorage.setItem('KICKUP_KIT', JSON.stringify(kit));
+            Alert.alert('Kit Saved!');
+        } catch (e) {
+            console.error('Failed to save kit', e);
+        }
+    };
+
+    const getArchetypeTitle = () => {
+        if (user.stats.dribbling > 80) return "Architecte Technique 🎨";
+        if (user.stats.pace > 80) return "Flèche Vivante ⚡";
+        return "Rising Star 🌟";
+    };
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
+        <ScrollView contentContainerStyle={styles.container}>
             <Text style={styles.title}>Locker Room</Text>
-            <Text style={styles.subtitle}>Your Digital Collection</Text>
 
-            <FlatList
-                data={MOCK_ASSETS}
-                renderItem={renderAsset}
-                keyExtractor={item => item.id}
-                numColumns={2}
-                contentContainerStyle={styles.grid}
-                columnWrapperStyle={styles.row}
-            />
-        </View>
+            {/* Radar Chart Section */}
+            <View style={styles.chartContainer}>
+                <RadarChart stats={user.stats} size={250} />
+                <Text style={styles.archetypeText}>{getArchetypeTitle()}</Text>
+            </View>
+
+            <Text style={styles.subtitle}>Design Your Kit</Text>
+
+            <View style={styles.previewContainer}>
+                <JerseyIcon
+                    primaryColor={primaryColor}
+                    secondaryColor={secondaryColor}
+                    number={number}
+                    size={250}
+                />
+            </View>
+
+            <View style={styles.controls}>
+                <Text style={styles.label}>Jersey Number</Text>
+                <TextInput
+                    style={styles.input}
+                    value={number}
+                    onChangeText={(text) => setNumber(text.substring(0, 2))}
+                    keyboardType="numeric"
+                    maxLength={2}
+                />
+
+                <Text style={styles.label}>Primary Color</Text>
+                <View style={styles.colorGrid}>
+                    {COLORS.map((color) => (
+                        <TouchableOpacity
+                            key={`primary-${color}`}
+                            style={[
+                                styles.colorSwatch,
+                                { backgroundColor: color, borderWidth: primaryColor === color ? 3 : 1 },
+                            ]}
+                            onPress={() => setPrimaryColor(color)}
+                        />
+                    ))}
+                </View>
+
+                <Text style={styles.label}>Secondary Color</Text>
+                <View style={styles.colorGrid}>
+                    {COLORS.map((color) => (
+                        <TouchableOpacity
+                            key={`secondary-${color}`}
+                            style={[
+                                styles.colorSwatch,
+                                { backgroundColor: color, borderWidth: secondaryColor === color ? 3 : 1 },
+                            ]}
+                            onPress={() => setSecondaryColor(color)}
+                        />
+                    ))}
+                </View>
+
+                <TouchableOpacity style={styles.saveButton} onPress={saveKit}>
+                    <Text style={styles.saveButtonText}>Save Kit</Text>
+                </TouchableOpacity>
+            </View>
+        </ScrollView>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
-        backgroundColor: '#000',
-        paddingHorizontal: 16,
+        flexGrow: 1,
+        padding: 20,
+        backgroundColor: '#f5f5f5',
+        alignItems: 'center',
     },
     title: {
-        fontSize: 24,
+        fontSize: 32,
         fontWeight: 'bold',
-        color: '#FFD700',
-        marginTop: 10,
+        marginBottom: 10,
+        color: '#333',
     },
     subtitle: {
-        fontSize: 14,
-        color: '#AAA',
-        marginBottom: 20,
+        fontSize: 18,
+        color: '#666',
+        marginBottom: 30,
     },
-    grid: {
-        paddingBottom: 20,
+    previewContainer: {
+        marginBottom: 40,
+        padding: 20,
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
     },
-    row: {
-        justifyContent: 'space-between',
+    controls: {
+        width: '100%',
     },
-    card: {
-        backgroundColor: '#1E1E1E',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 16,
-        width: '48%',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#333',
-    },
-    iconPlaceholder: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: '#333',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    iconText: {
-        fontSize: 30,
-    },
-    assetName: {
-        color: '#FFF',
-        fontWeight: 'bold',
+    label: {
         fontSize: 16,
-        textAlign: 'center',
-        marginBottom: 4,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        marginTop: 20,
+        color: '#333',
     },
-    assetType: {
-        color: '#FFD700',
-        fontSize: 12,
-        textTransform: 'uppercase',
-        letterSpacing: 1,
+    input: {
+        backgroundColor: '#fff',
+        padding: 15,
+        borderRadius: 10,
+        fontSize: 18,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        textAlign: 'center',
+    },
+    colorGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+    },
+    colorSwatch: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        borderColor: '#ccc',
+    },
+    saveButton: {
+        backgroundColor: '#000',
+        padding: 15,
+        borderRadius: 10,
+        marginTop: 40,
+        alignItems: 'center',
+    },
+    saveButtonText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    chartContainer: {
+        alignItems: 'center',
+        marginBottom: 30,
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        padding: 10,
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+        width: '100%',
+    },
+    archetypeText: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#007AFF',
+        marginTop: 10,
+        marginBottom: 10,
     },
 });
-
-export default LockerRoomScreen;
