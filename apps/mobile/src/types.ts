@@ -4,4 +4,10 @@ export type RootStackParamList = {
     Camera: undefined;
     Settings: undefined;
     Home: undefined;
+    Drill: undefined;
+    Matchmaking: undefined;
+    SocialFeed: undefined;
+    LockerRoom: undefined;
+    Calendar: undefined;
+    HealthCheck: undefined;
 };

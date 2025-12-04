@@ -10,6 +10,12 @@ import { HomeScreen } from './src/screens/HomeScreen';
 import { CameraScreen } from './src/screens/CameraScreen';
 import { SplashScreen } from './src/screens/SplashScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
+import DrillScreen from './src/screens/DrillScreen';
+import MatchmakingScreen from './src/screens/MatchmakingScreen';
+import SocialFeedScreen from './src/screens/SocialFeedScreen';
+import LockerRoomScreen from './src/screens/LockerRoomScreen';
+import CalendarScreen from './src/screens/CalendarScreen';
+import HealthCheckScreen from './src/screens/HealthCheckScreen';
 import { RootStackParamList } from './src/types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -59,6 +65,12 @@ function App(): React.JSX.Element {
               <Stack.Screen name="Home" component={HomeScreen} />
               <Stack.Screen name="Camera" component={CameraScreen} />
               <Stack.Screen name="Settings" component={SettingsScreen} />
+              <Stack.Screen name="Drill" component={DrillScreen} />
+              <Stack.Screen name="Matchmaking" component={MatchmakingScreen} />
+              <Stack.Screen name="SocialFeed" component={SocialFeedScreen} />
+              <Stack.Screen name="LockerRoom" component={LockerRoomScreen} />
+              <Stack.Screen name="Calendar" component={CalendarScreen} />
+              <Stack.Screen name="HealthCheck" component={HealthCheckScreen} />
             </>
           ) : (
             <>

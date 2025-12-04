@@ -12,6 +12,13 @@ export enum AgeGroup {
     ADULT = 'ADULT'
 }
 
+export enum Position {
+    GOALKEEPER = 'GOALKEEPER',
+    DEFENDER = 'DEFENDER',
+    MIDFIELDER = 'MIDFIELDER',
+    FORWARD = 'FORWARD'
+}
+
 export interface Location {
     latitude: number;
     longitude: number;

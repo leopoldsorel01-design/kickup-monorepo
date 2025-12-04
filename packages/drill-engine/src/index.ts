@@ -19,24 +19,87 @@ export const jugglingDrillMachine = createMachine({
     }
 });
 
+export interface ActionableTip {
+    id: string;
+    text: string;
+    joint: 'left_knee' | 'right_knee' | 'hips' | 'head';
+    correction: string; // e.g., "Raise higher", "Keep steady"
+    priority: 'high' | 'medium' | 'low';
+}
+
+export interface FeedbackContext {
+    detectedJoints: string[];
+    tips: ActionableTip[];
+    currentDrill: string;
+}
+
 export const feedbackSessionMachine = createMachine({
     id: 'feedback_session',
     initial: 'idle',
+    context: {
+        detectedJoints: [],
+        tips: [],
+        currentDrill: 'juggling_basic'
+    } as FeedbackContext,
     states: {
         idle: {
-            on: { START_SESSION: 'scanning_user' }
+            on: { START_SESSION: 'scanning_body' }
         },
-        scanning_user: {
-            on: { USER_DETECTED: 'drill_active' }
+        scanning_body: {
+            // Source 25: "Scanning User"
+            on: {
+                BODY_DETECTED: 'detecting_joints',
+                TIMEOUT: 'idle'
+            }
         },
-        drill_active: {
-            on: { DRILL_COMPLETE: 'analyzing_motion' }
+        detecting_joints: {
+            // Source 26: "Detecting Joints"
+            on: {
+                JOINTS_LOCKED: 'analyzing_form',
+                LOST_TRACKING: 'scanning_body'
+            }
         },
-        analyzing_motion: {
-            on: { ANALYSIS_COMPLETE: 'feedback_generation' }
+        analyzing_form: {
+            // Source 26: "Analyzing Motion"
+            on: {
+                DRILL_COMPLETE: 'generating_feedback',
+                FORM_ERROR: {
+                    actions: 'logFormError'
+                }
+            }
         },
-        feedback_generation: {
-            on: { DISMISS: 'idle', RESTART: 'scanning_user' }
+        generating_feedback: {
+            // Source 26: "Feedback Generation"
+            entry: 'generateActionableTips',
+            on: {
+                DISMISS: 'idle',
+                RESTART: 'scanning_body'
+            }
+        }
+    }
+}, {
+    actions: {
+        generateActionableTips: (context) => {
+            // Mock AI Logic: In reality, this would process the motion data
+            context.tips = [
+                {
+                    id: 'tip_1',
+                    text: 'Keep your hips square to the ball.',
+                    joint: 'hips',
+                    correction: 'Rotate 15 degrees left',
+                    priority: 'high'
+                },
+                {
+                    id: 'tip_2',
+                    text: 'Knees slightly bent for better balance.',
+                    joint: 'left_knee',
+                    correction: 'Bend more',
+                    priority: 'medium'
+                }
+            ];
+        },
+        logFormError: (context, event) => {
+            console.log('Form error detected:', event);
         }
     }
 });
