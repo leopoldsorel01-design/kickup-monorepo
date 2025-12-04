@@ -60,3 +60,6 @@ apps/mobile/android/local.properties
 # Firebase (sensitive)
 GoogleService-Info.plist
 google-services.json
+
+# Turbo
+.turbo
