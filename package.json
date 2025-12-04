@@ -17,8 +17,8 @@
         "prettier": "latest"
     },
     "resolutions": {
-        "react": "19.1.1",
-        "@types/react": "^19.1.1"
+        "react": "18.3.1",
+        "@types/react": "^18.3.12"
     },
     "packageManager": "yarn@1.22.19"
 }

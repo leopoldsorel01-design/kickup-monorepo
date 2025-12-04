@@ -1,204 +1,236 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Alert } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useApp } from '../context/AppContext';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useMachine } from '@xstate/react';
+import { jugglingDrillMachine } from '@kickup/drill-engine';
+import { GlassButton } from '@kickup/ui-kit';
 
-const { width } = Dimensions.get('window');
+export default function DrillScreen() {
+    const navigation = useNavigation();
+    const [state, send] = useMachine(jugglingDrillMachine);
+    const { juggles, duration } = state.context;
 
-const DrillScreen = () => {
-    const insets = useSafeAreaInsets();
-    const { user, logDrillSession } = useApp();
+    // Refs for intervals
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const juggleSimRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    // Drill State
-    const [status, setStatus] = useState<'IDLE' | 'ACTIVE' | 'COMPLETE'>('IDLE');
-    const [score, setScore] = useState(0);
-    const [timeLeft, setTimeLeft] = useState(30); // 30 second drill
-    const [paceColor, setPaceColor] = useState('#FFF');
-
-    // Ghost Mode Logic
-    const TARGET_PACE = 0.5; // 0.5 reps per second (15 reps in 30s)
-    const record = user.bestDrillScore;
-
+    // Active Drill Logic (Timer + Simulation)
     useEffect(() => {
-        let interval: NodeJS.Timeout;
-        if (status === 'ACTIVE') {
-            interval = setInterval(() => {
-                setTimeLeft(prev => {
-                    if (prev <= 1) {
-                        endDrill();
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-
-                // Ghost Mode Color Logic
-                const timeElapsed = 30 - timeLeft;
-                const expectedScore = timeElapsed * TARGET_PACE;
-                if (score > expectedScore) {
-                    setPaceColor('#00FF00'); // Green (Ahead of pace)
-                } else {
-                    setPaceColor('#FF4444'); // Red (Behind pace)
-                }
+        if (state.matches('active')) {
+            // Start Timer
+            timerRef.current = setInterval(() => {
+                send({ type: 'TICK' });
             }, 1000);
+
+            // Simulate Juggles (Mock Vision)
+            juggleSimRef.current = setInterval(() => {
+                // Randomly increment juggles to simulate detection
+                if (Math.random() > 0.3) {
+                    send({ type: 'DETECT_BALL' });
+                }
+            }, 2000);
+
+            return () => {
+                if (timerRef.current) clearInterval(timerRef.current);
+                if (juggleSimRef.current) clearInterval(juggleSimRef.current);
+            };
         }
-        return () => clearInterval(interval);
-    }, [status, timeLeft, score]);
+    }, [state.value, send]);
 
-    const startDrill = () => {
-        setStatus('ACTIVE');
-        setScore(0);
-        setTimeLeft(30);
-    };
-
-    const handleTap = () => {
-        if (status === 'ACTIVE') {
-            setScore(prev => prev + 1);
-        }
-    };
-
-    const endDrill = () => {
-        setStatus('COMPLETE');
-        logDrillSession(score);
-        Alert.alert('🏁 Drill Complete', `Score: ${score}\nBest: ${Math.max(score, record)}`);
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
     };
 
     return (
         <View style={styles.container}>
-            {/* Camera View Placeholder */}
-            <TouchableOpacity
-                activeOpacity={1}
-                style={styles.cameraPlaceholder}
-                onPress={handleTap}
-            >
-                <Text style={styles.cameraText}>
-                    {status === 'IDLE' ? 'Tap Start to Begin' : 'Tap to Count Reps (Simulated AI)'}
-                </Text>
-
-                {/* Ghost Mode UI */}
-                <View style={styles.ghostOverlay}>
-                    <Text style={styles.recordText}>👻 Record: {record}</Text>
-                    <Text style={[styles.scoreText, { color: paceColor }]}>
-                        {score}
-                    </Text>
-                    {status === 'ACTIVE' && (
-                        <Text style={styles.timerText}>{timeLeft}s</Text>
-                    )}
-                </View>
+            {/* Header / Back Button */}
+            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                <Text style={styles.backButtonText}>✕</Text>
             </TouchableOpacity>
 
-            {/* Controls */}
-            <View style={[styles.overlay, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-                <View style={styles.header}>
-                    <Text style={styles.statusText}>{status}</Text>
-                </View>
-
-                {status === 'IDLE' && (
-                    <TouchableOpacity style={styles.startButton} onPress={startDrill}>
-                        <View style={styles.innerCircle} />
-                    </TouchableOpacity>
+            {/* Main Content based on State */}
+            <View style={styles.content}>
+                {state.matches('calibration') && (
+                    <View style={styles.centerContent}>
+                        <Text style={styles.title}>Calibration</Text>
+                        <Text style={styles.instructions}>Point camera at the floor</Text>
+                        <TouchableOpacity style={styles.startButton} onPress={() => send({ type: 'PLANE_DETECTED' })}>
+                            <Text style={styles.startButtonText}>PLANE DETECTED</Text>
+                        </TouchableOpacity>
+                    </View>
                 )}
 
-                {status === 'COMPLETE' && (
-                    <TouchableOpacity style={styles.restartButton} onPress={() => setStatus('IDLE')}>
-                        <Text style={styles.restartText}>Reset</Text>
-                    </TouchableOpacity>
+                {state.matches('anchor_placement') && (
+                    <View style={styles.centerContent}>
+                        <Text style={styles.title}>Place Anchor</Text>
+                        <Text style={styles.instructions}>Tap to place the ball anchor</Text>
+                        <TouchableOpacity style={styles.startButton} onPress={() => send({ type: 'USER_CONFIRM' })}>
+                            <Text style={styles.startButtonText}>CONFIRM ANCHOR</Text>
+                            <GlassButton title="CONFIRM ANCHOR" onPress={() => send({ type: 'USER_CONFIRM' })} />
+                    </View>
+                )}
+
+                {state.matches('body_fit') && (
+                    <View style={styles.centerContent}>
+                        <Text style={styles.title}>Body Fit</Text>
+                        <Text style={styles.instructions}>Stand in the frame</Text>
+                        <GlassButton title="START DRILL" onPress={() => send({ type: 'POSE_VALID' })} />
+                    </View>
+                )}
+
+                {state.matches('active') && (
+                    <View style={styles.activeContainer}>
+                        <View style={styles.statsContainer}>
+                            <View style={styles.statBox}>
+                                <Text style={styles.statLabel}>TIME</Text>
+                                <Text style={styles.statValue}>{formatTime(duration)}</Text>
+                            </View>
+                            <View style={styles.statBox}>
+                                <Text style={styles.statLabel}>JUGGLES</Text>
+                                <Text style={styles.statValue}>{juggles}</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.cameraPlaceholder}>
+                            <Text style={styles.cameraText}>[ Camera Feed Simulation ]</Text>
+                            <Text style={styles.cameraSubText}>AI Tracking Active...</Text>
+                        </View>
+
+                        <GlassButton title="STOP DRILL" variant="secondary" onPress={() => send({ type: 'STOP' })} style={{ marginHorizontal: 40 }} />
+                    </View>
+                )}
+
+                {state.matches('summary') && (
+                    <View style={styles.centerContent}>
+                        <Text style={styles.title}>Great Session!</Text>
+                        <Text style={styles.scoreText}>{juggles} Juggles</Text>
+                        <Text style={styles.timeText}>Time: {formatTime(duration)}</Text>
+
+                        <GlassButton title="DONE" variant="secondary" onPress={() => navigation.goBack()} />
+                    </View>
                 )}
             </View>
         </View>
     );
-};
+}
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#000',
+        backgroundColor: '#000000',
     },
-    cameraPlaceholder: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: '#1a1a1a',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    cameraText: {
-        color: '#333',
-        fontSize: 20,
-        fontWeight: 'bold',
+    backButton: {
         position: 'absolute',
-        top: '40%',
+        top: 50,
+        left: 20,
+        zIndex: 10,
+        padding: 10,
     },
-    ghostOverlay: {
-        position: 'absolute',
-        top: 100,
-        alignItems: 'center',
-    },
-    recordText: {
-        color: 'rgba(255, 255, 255, 0.5)',
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 8,
-    },
-    scoreText: {
-        fontSize: 80,
-        fontWeight: 'bold',
-        textShadowColor: 'rgba(0, 0, 0, 0.75)',
-        textShadowOffset: { width: -1, height: 1 },
-        textShadowRadius: 10
-    },
-    timerText: {
-        color: '#FFD700',
+    backButtonText: {
+        color: '#FFFFFF',
         fontSize: 24,
         fontWeight: 'bold',
-        marginTop: 8,
     },
-    overlay: {
+    content: {
         flex: 1,
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        pointerEvents: 'box-none', // Allow touches to pass through to camera placeholder
-    },
-    header: {
-        marginTop: 20,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-    },
-    statusText: {
-        color: '#FFF',
-        fontSize: 14,
-        fontWeight: '600',
-        letterSpacing: 1,
-    },
-    startButton: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 40,
-        borderWidth: 2,
-        borderColor: '#FFF',
     },
-    innerCircle: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: '#FFF',
+    centerContent: {
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    restartButton: {
-        marginBottom: 40,
-        backgroundColor: '#FFD700',
-        paddingHorizontal: 32,
-        paddingVertical: 12,
-        borderRadius: 24,
-    },
-    restartText: {
-        color: '#000',
+    title: {
+        color: '#FFFFFF',
+        fontSize: 32,
         fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    instructions: {
+        color: '#AAAAAA',
         fontSize: 16,
+        marginBottom: 40,
+    },
+    startButton: {
+        backgroundColor: '#FFD700',
+        paddingHorizontal: 40,
+        paddingVertical: 15,
+        borderRadius: 30,
+        marginBottom: 20,
+    },
+    startButtonText: {
+        color: '#000000',
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    activeContainer: {
+        flex: 1,
+        width: '100%',
+        justifyContent: 'space-between',
+        paddingVertical: 60,
+    },
+    statsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        width: '100%',
+        paddingHorizontal: 20,
+    },
+    statBox: {
+        alignItems: 'center',
+    },
+    statLabel: {
+        color: '#AAAAAA',
+        fontSize: 14,
+        fontWeight: 'bold',
+    },
+    statValue: {
+        color: '#FFFFFF',
+        fontSize: 36,
+        fontWeight: 'bold',
+    },
+    cameraPlaceholder: {
+        flex: 1,
+        margin: 20,
+        backgroundColor: '#1E1E1E',
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#333333',
+        borderStyle: 'dashed',
+    },
+    cameraText: {
+        color: '#666666',
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    cameraSubText: {
+        color: '#444444',
+        marginTop: 10,
+    },
+    stopButton: {
+        backgroundColor: '#FF4444',
+        marginHorizontal: 40,
+        paddingVertical: 15,
+        borderRadius: 30,
+        alignItems: 'center',
+    },
+    stopButtonText: {
+        color: '#FFFFFF',
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    scoreText: {
+        color: '#FFD700',
+        fontSize: 60,
+        fontWeight: 'bold',
+        marginVertical: 20,
+    },
+    timeText: {
+        color: '#FFFFFF',
+        fontSize: 20,
+        marginBottom: 40,
     },
 });
-
-export default DrillScreen;

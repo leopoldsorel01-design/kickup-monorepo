@@ -1,8 +1,13 @@
-import { createMachine } from 'xstate';
+import { createMachine, assign } from 'xstate';
 
 export const jugglingDrillMachine = createMachine({
     id: 'juggling_drill',
     initial: 'calibration',
+    context: {
+        juggles: 0,
+        duration: 0,
+        targetJuggles: 100 // Example target
+    },
     states: {
         calibration: {
             on: { PLANE_DETECTED: 'anchor_placement' }
@@ -14,6 +19,17 @@ export const jugglingDrillMachine = createMachine({
             on: { POSE_VALID: 'active' }
         },
         active: {
+            on: {
+                TICK: {
+                    actions: assign({ duration: (context: any) => context.duration + 1 })
+                },
+                DETECT_BALL: {
+                    actions: assign({ juggles: (context: any) => context.juggles + 1 })
+                },
+                STOP: 'summary'
+            }
+        },
+        summary: {
             type: 'final'
         }
     }

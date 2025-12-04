@@ -1,5 +1,6 @@
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
+import { db, Player } from './services/DatabaseService';
 
 const typeDefs = `#graphql
   enum SkillLevel {
@@ -85,7 +86,7 @@ const typeDefs = `#graphql
     skillLevel: SkillLevel
     ageGroup: AgeGroup
     position: Position
-    requesterAge: Int! # Required for privacy filtering
+    position: Position
   }
 
   type Query {
@@ -120,30 +121,43 @@ function deg2rad(deg: number) {
   return deg * (Math.PI / 180);
 }
 
+// Secure helper to get user age from auth token
+function getUserAge(authToken: string | undefined): number {
+  // In a real app, verify JWT and extract birthDate.
+  // MOCK: If no token, assume ADULT for safety or reject.
+  // For this exercise, we'll simulate a user based on a header or default to 16 (Minor).
+  if (authToken === 'adult-token') return 25;
+  // TODO: Decode Firebase token here using firebase-admin
+  return 16; // Default to minor for safety if unknown
+}
+
+interface UserContext {
+  token?: string;
+  id?: string;
+  role?: string;
+  birthDate?: string;
+}
+
 const resolvers = {
   Query: {
     hello: () => 'Hello KickUp!',
-    findPlayers: (_: any, { filter }: { filter: any }) => {
-      // Mock Database
-      const mockPlayers = [
-        { id: '1', username: 'Striker99', skillLevel: 'ADVANCED', ageGroup: 'ADULT', position: 'FORWARD', location: { latitude: 40.7128, longitude: -74.0060 } }, // NYC
-        { id: '2', username: 'MidfieldMaestro', skillLevel: 'INTERMEDIATE', ageGroup: 'UNDER_18', position: 'MIDFIELDER', location: { latitude: 40.7138, longitude: -74.0070 } }, // NYC nearby
-        { id: '3', username: 'GoalieOne', skillLevel: 'BEGINNER', ageGroup: 'UNDER_12', position: 'GOALKEEPER', location: { latitude: 40.7580, longitude: -73.9855 } }, // Times Square
-        { id: '4', username: 'ProDefender', skillLevel: 'PRO', ageGroup: 'ADULT', position: 'DEFENDER', location: { latitude: 34.0522, longitude: -118.2437 } }, // LA
-      ];
+    findPlayers: (_: unknown, { filter }: { filter: any }, context: UserContext) => {
+      const allPlayers = db.getAllPlayers();
 
-      // 1. Privacy Filter (Source 32)
+      // 1. Secure Age Determination
+      const requesterAge = getUserAge(context.token);
+      const isRequesterMinor = requesterAge < 18;
+
+      // 2. Privacy Filter (Source 32)
       // Strict separation: Under 18s cannot see Adults, and Adults cannot see Under 18s.
-      const isRequesterMinor = filter.requesterAge < 18;
-
-      const privacyFiltered = mockPlayers.filter(player => {
+      const privacyFiltered = allPlayers.filter(player => {
         const isPlayerAdult = player.ageGroup === 'ADULT';
         if (isRequesterMinor && isPlayerAdult) return false;
         if (!isRequesterMinor && !isPlayerAdult) return false;
         return true;
       });
 
-      // 2. Geospatial & Attribute Filtering
+      // 3. Geospatial & Attribute Filtering
       return privacyFiltered
         .map(player => {
           const distance = getDistanceFromLatLonInKm(
@@ -162,54 +176,17 @@ const resolvers = {
         })
         .sort((a, b) => a.distanceKm - b.distanceKm);
     },
-    getFeed: () => [
-      {
-        id: '101',
-        username: 'MbappeFan',
-        content: 'Just hit a 50 streak on the juggling drill! ⚽️🔥',
-        likes: 24,
-        comments: [{ id: 'c1', username: 'CoachMike', text: 'Great form!', createdAt: '2m ago' }],
-        createdAt: '10m ago'
-      },
-      {
-        id: '102',
-        username: 'LocalLegend',
-        content: 'Looking for a keeper for Tuesday night match. DM me.',
-        likes: 5,
-        comments: [],
-        createdAt: '1h ago'
-      }
-    ],
-    getLockerRoom: () => [
-      { id: 'a1', name: 'Golden Boots', type: 'Boots', imageUrl: 'boots_gold.png' },
-      { id: 'a2', name: 'KickUp Jersey', type: 'Jersey', imageUrl: 'jersey_home.png' }
-    ],
-    getEvents: () => [
-      { id: 'e1', title: '5v5 Scrimmage', date: 'Tue, 5:00 PM', location: 'Central Park', type: 'Match' },
-      { id: 'e2', title: 'Drill Session', date: 'Wed, 6:00 PM', location: 'Home', type: 'Training' }
-    ]
+    getFeed: () => db.getFeed(),
+    getLockerRoom: () => db.getLockerRoom(),
+    getEvents: () => db.getEvents()
   },
   Mutation: {
     likePost: (_: any, { postId }: { postId: string }) => {
-      // Mock mutation
-      return {
-        id: postId,
-        username: 'MbappeFan',
-        content: 'Just hit a 50 streak on the juggling drill! ⚽️🔥',
-        likes: 25, // Incremented
-        comments: [],
-        createdAt: '10m ago'
-      };
+      return db.likePost(postId);
     },
-    createPost: (_: any, { content }: { content: string }) => {
-      return {
-        id: 'new_post',
-        username: 'CurrentUser',
-        content,
-        likes: 0,
-        comments: [],
-        createdAt: 'Just now'
-      };
+    createPost: (_: any, { content, imageUrl }: { content: string, imageUrl?: string }) => {
+      // Mock username from context
+      return db.createPost('CurrentUser', content, imageUrl);
     }
   }
 };

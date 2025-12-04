@@ -95,5 +95,16 @@ export const AuthService = {
 
     getCurrentUser: (): FirebaseAuthTypes.User | null => {
         return auth().currentUser;
+    },
+
+    getAuthToken: async (): Promise<string | null> => {
+        const user = auth().currentUser;
+        if (!user) return null;
+        return user.getIdToken(true); // Force refresh to ensure valid token
+    },
+
+    getAuthHeaders: async () => {
+        const token = await AuthService.getAuthToken();
+        return token ? { Authorization: `Bearer ${token}` } : {};
     }
 };

@@ -1,0 +1,44 @@
+// packages/db-schema/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  firebaseId  String   @unique
+  email       String   @unique
+  birthDate   DateTime
+  skillLevel  String   // BEGINNER, INTERMEDIATE, ADVANCED, PRO
+  location    Json     // { latitude: Float, longitude: Float }
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  drillSessions DrillSession[]
+  posts         Post[]
+}
+
+model DrillSession {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  score     Int
+  duration  Int      // in seconds
+  avgPace   Float?   // juggles per minute
+  date      DateTime @default(now())
+}
+
+model Post {
+  id         String   @id @default(uuid())
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id])
+  content    String
+  mediaUrl   String?
+  likesCount Int      @default(0)
+  createdAt  DateTime @default(now())
+}
