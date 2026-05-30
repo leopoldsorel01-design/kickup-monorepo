@@ -86,7 +86,6 @@ const typeDefs = `#graphql
     skillLevel: SkillLevel
     ageGroup: AgeGroup
     position: Position
-    position: Position
   }
 
   type Query {
